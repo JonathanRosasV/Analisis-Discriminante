@@ -1,1 +1,78 @@
+# Analisis discriminante en R
+# UNT - Escuela de posgrado
+# Maestria en Ciencias con mención en Estadística Aplicada
+# User: TomahtoGrower
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(MASS)
+pacman::p_load(stats)
+pacman::p_load(mvnormtest)
+pacman::p_load(heplots)
+pacman::p_load(car)
+
+# Cargar el conjunto de datos iris
+data(iris)
+
+# Separa los datos de cada especie en un objeto diferente:
+setosa <- iris[iris$Species == "setosa", 1:4]
+versicolor <- iris[iris$Species == "versicolor", 1:4]
+virginica <- iris[iris$Species == "virginica", 1:4]
+
+# Calcula las matrices de covarianzas de cada especie:
+cov_setosa <- cov(setosa)
+cov_versicolor <- cov(versicolor)
+cov_virginica <- cov(virginica)
+
+# Crea una matriz que contenga todas las matrices de covarianzas:
+all_cov <- array(0, dim = c(4, 4, 3))
+all_cov[, , 1] <- cov_setosa
+all_cov[, , 2] <- cov_versicolor
+all_cov[, , 3] <- cov_virginica
+
+# Proceso de analisis discriminante
+
+# Cálculo de estadísticas de grupo
+by(iris[, 1:4], iris$Species, summary)
+
+# Pruebas de igualdad de medias de grupo
+Anova(lm(Sepal.Length ~ Species, data = iris))
+Anova(lm(Sepal.Width ~ Species, data = iris))
+Anova(lm(Petal.Length ~ Species, data = iris))
+Anova(lm(Petal.Width ~ Species, data = iris))
+
+# Crear una matriz de datos que contenga todas las observaciones de los tres grupos
+data_matrix <- rbind(setosa[,1:4], versicolor[,1:4], virginica[,1:4])
+
+# Realizar la prueba de Box para evaluar la igualdad de matrices de covarianza
+boxM(data_matrix, group = rep(c("setosa", "versicolor", "virginica"), times = c(nrow(setosa), nrow(versicolor), nrow(virginica))))
+
+# Realizar un análisis discriminante de Fisher
+# Ajusta un modelo de análisis discriminante canónico para las tres especies
+iris.lda <- lda(Species ~ ., data = iris)
+iris.lda
+# Probabilidades a priori
+iris.lda$prior  
+
+# Resumen de funciones discriminantes canónicas
+summary(iris.lda)
+
+# Coeficientes de funcion discriminantes estandarizados
+coef(iris.lda)
+
+# Realizar predicciones sobre la clase de las cuatro primeras flores
+predict(iris.lda,iris[1:4, ])$class
+# Tablar para cruzar las predicciones con los valores verdaderos
+table(iris[,5],predict(iris.lda,iris[,1:4])$class)
+
+# Realizar predicciones en el conjunto de datos de entrenamiento
+iris.pred <- predict(iris.lda, newdata = iris)
+
+# Calcular la matriz de confusión
+table(iris$Species, iris.pred$class)
+
+# Evalúa el modelo ajustado en los datos de entrenamiento
+train_pred <- iris.pred$class
+dev.new(width = 6, height = 6)
+par(mar = c(5, 4, 4, 2) + 0.1)
+plot(iris[, -5], col = iris.pred$class)
 
